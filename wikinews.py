@@ -96,26 +96,31 @@ class DayOfNews():
             if len(line) == 0 or is_just_more_categories(line):
                 subcategory = item_name
             else:
-                news_item = item_name
+                news_item = NewsItem(item_name)
                 parse_news_item()
 
         def parse_link():
-            nonlocal line
+            nonlocal line, news_item
             line = line.lstrip('[')
-            while not line.startswith(']'):
+            while not line.startswith(' ('):
+                news_item.url += line[0]
                 line = line[1:]
-            line = line.lstrip(']')
+            line = line.lstrip(' (')
+            while not line.startswith(')'):
+                news_item.source += line[0]
+                line = line[1:]
+            line = line.lstrip(')]')
 
         def parse_news_item():
             nonlocal line, news_item
             while len(line):
                 if line.startswith('[['):
                     parse_item_name()
-                    news_item += item_name
+                    news_item.text += item_name
                 elif line.startswith('['):
                     parse_link()
                 else:
-                    news_item += line[0]
+                    news_item.text += line[0]
                     line = line[1:]
 
 
@@ -126,7 +131,7 @@ class DayOfNews():
         if line.startswith('[['):
             parse_category()
         else:
-            news_item = ''
+            news_item = NewsItem()
             parse_news_item()
 
         return subcategory, depth, news_item
@@ -144,7 +149,7 @@ class DayOfNews():
         parent = self.categories
         for category in self._current_category_chain:
             parent = parent[category]
-        parent[len(parent)] = news_item
+        parent[news_item.url] = news_item
     
     def parse_info(self):
         for line in self._raw_info.splitlines():
@@ -157,19 +162,26 @@ class DayOfNews():
                 elif news_item:
                     self.append_news_item(news_item)
 
-    def stringify(self, categories, format_str='{}\n'):
+    def stringify(self, categories, format_str='{text} {source} {url}\n'):
         news_str = str()
         def add_news_items(category):
             nonlocal news_str
-            for key, value in category.items():
-                if type(key) == int:
-                    news_str += format_str.format(value)
+            for item_or_category in category.values():
+                if type(item_or_category) == NewsItem:
+                    news_str += format_str.format(
+                        text=item_or_category.text,
+                        source=item_or_category.source,
+                        url=item_or_category.url)
                 else:
-                    add_news_items(value)
+                    add_news_items(item_or_category)
         add_news_items(categories)
         return news_str
   
-
+class NewsItem():
+    def __init__(self, text=None):
+        self.text = text or ''
+        self.url = ''
+        self.source = ''
 
 
 
