@@ -10,7 +10,7 @@ TRIPLE_QUOTE = "\'''"
 STAR_CHAR = '*'
 BAR_CHAR = '|'
 
-class WikiNewsHTMLParser(HTMLParser):
+class WikiNewsGenerator(HTMLParser):
     def __init__(self):
         super(). __init__() 
         self.news = {}
