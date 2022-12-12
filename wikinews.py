@@ -157,7 +157,7 @@ class DayOfNews():
                 elif news_item:
                     self.append_news_item(news_item)
 
-    def stringify(self, format_str='{}\n'):
+    def stringify(self, categories, format_str='{}\n'):
         news_str = str()
         def add_news_items(category):
             nonlocal news_str
@@ -166,7 +166,7 @@ class DayOfNews():
                     news_str += format_str.format(value)
                 else:
                     add_news_items(value)
-        add_news_items(self.categories)
+        add_news_items(categories)
         return news_str
   
 
