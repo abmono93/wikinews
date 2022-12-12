@@ -107,7 +107,8 @@ class DayOfNews():
                 line = line[1:]
             line = line.lstrip(' (')
             while not line.startswith(')'):
-                news_item.source += line[0]
+                if not line.startswith("'"):
+                    news_item.source += line[0]
                 line = line[1:]
             line = line.lstrip(')]')
 
