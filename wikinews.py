@@ -120,6 +120,7 @@ class DayOfNews():
                     news_item.text += item_name
                 elif line.startswith('['):
                     parse_link()
+                    return
                 else:
                     news_item.text += line[0]
                     line = line[1:]
