@@ -163,7 +163,7 @@ class NewsItem():
         return self.raw_info
 
     def __repr__(self):
-        return self.__str__()
+        return f"'{self.raw_info}'"
 
     def parse_raw_info(self, data):
         while len(data):
