@@ -10,6 +10,20 @@ TRIPLE_QUOTE = "\'''"
 STAR_CHAR = '*'
 BAR_CHAR = '|'
 
+def parse_item_name(data):
+    item_name = ''
+
+    data = data.lstrip('[[')
+    while not data.startswith(']]'):
+        if data.startswith(BAR_CHAR):
+            item_name = ''
+        else:
+            item_name += data[0]
+        data = data[1:]
+    data = data.lstrip(']]')
+
+    return item_name, data
+
 class WikiNewsGenerator(HTMLParser):
     def __init__(self):
         super(). __init__() 
@@ -63,21 +77,8 @@ class DayOfNews():
     
     def parse_bullet_point(self, line):
         depth = 0
-        item_name = ''
         subcategory = None
         news_item = None
-
-        def parse_item_name():
-            nonlocal line, item_name
-            item_name = ''
-            line = line.lstrip('[[')
-            while not line.startswith(']]'):
-                if line.startswith(BAR_CHAR):
-                    item_name = ''
-                else: 
-                    item_name += line[0]
-                line = line[1:]
-            line = line.lstrip(']]')
         
         def is_just_more_categories(line):
             ans = True
@@ -91,40 +92,12 @@ class DayOfNews():
             return ans
 
         def parse_category():
-            nonlocal line, news_item, item_name, subcategory
-            parse_item_name()
+            nonlocal line, news_item, subcategory
+            line, item_name = parse_item_name(line)
             if len(line) == 0 or is_just_more_categories(line):
                 subcategory = item_name
             else:
-                news_item = NewsItem(item_name)
-                parse_news_item()
-
-        def parse_link():
-            nonlocal line, news_item
-            line = line.lstrip('[')
-            while not line.startswith(' ('):
-                news_item.url += line[0]
-                line = line[1:]
-            line = line.lstrip(' (')
-            while not line.startswith(')'):
-                if not line.startswith("'"):
-                    news_item.source += line[0]
-                line = line[1:]
-            line = line.lstrip(')]')
-
-        def parse_news_item():
-            nonlocal line, news_item
-            while len(line):
-                if line.startswith('[['):
-                    parse_item_name()
-                    news_item.text += item_name
-                elif line.startswith('['):
-                    parse_link()
-                    return
-                else:
-                    news_item.text += line[0]
-                    line = line[1:]
-
+                news_item = NewsItem(item_name + line)
 
         while line[0] == STAR_CHAR:
             depth += 1
@@ -133,8 +106,7 @@ class DayOfNews():
         if line.startswith('[['):
             parse_category()
         else:
-            news_item = NewsItem()
-            parse_news_item()
+            news_item = NewsItem(line)
 
         return subcategory, depth, news_item
 
@@ -178,12 +150,46 @@ class DayOfNews():
                     add_news_items(item_or_category)
         add_news_items(categories)
         return news_str
-  
+
 class NewsItem():
-    def __init__(self, text=None):
-        self.text = text or ''
+    def __init__(self, raw_info):
+        self.text = ''
         self.url = ''
         self.source = ''
+        self.raw_info = raw_info
+        self.parse_raw_info(raw_info)
+
+    def __str__(self):
+        return self.raw_info
+
+    def __repr__(self):
+        return self.__str__()
+
+    def parse_raw_info(self, data):
+        while len(data):
+            if data.startswith('[['):
+                item_name, data = parse_item_name(data)
+                self.text += item_name
+            elif data.startswith('['):
+                self.parse_link(data)
+                break
+            else:
+                self.text += data[0]
+                data = data[1:]
+        self.text = self.text.strip()
+
+    def parse_link(self, link):
+        link = link.lstrip('[')
+        while not link.startswith(' ('):
+            self.url += link[0]
+            link = link[1:]
+        link = link.lstrip(' (')
+        while not link.startswith(')'):
+            if not link.startswith("'"):
+                self.source += link[0]
+            link = link[1:]
+        link = link.lstrip(')]')
+
 
 
 
