@@ -93,7 +93,7 @@ class DayOfNews():
 
         def parse_category():
             nonlocal line, news_item, subcategory
-            line, item_name = parse_item_name(line)
+            item_name, line = parse_item_name(line)
             if len(line) == 0 or is_just_more_categories(line):
                 subcategory = item_name
             else:
