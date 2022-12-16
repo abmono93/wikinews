@@ -1,4 +1,5 @@
 import mwclient
+import pickle
 from datetime import date
 from html.parser import HTMLParser
 
@@ -51,7 +52,7 @@ class WikiNewsGenerator(HTMLParser):
             self._state = READING_STATE
 
     def _read_info(self, data):
-        self.news[self._current_date] = DayOfNews(data)
+        self.news[self._current_date] = DayOfNews(self._current_date, data)
         self._state = START_STATE
 
     def handle_endtag(self, tag):
@@ -66,7 +67,8 @@ class WikiNewsGenerator(HTMLParser):
             self._read_info(data)
 
 class DayOfNews():
-    def __init__(self, raw_info):
+    def __init__(self, date, raw_info):
+        self.date = date
         self.categories = {}
         self._raw_info = raw_info
         self._current_category_chain = []
@@ -150,6 +152,11 @@ class DayOfNews():
                     add_news_items(item_or_category)
         add_news_items(categories)
         return news_str
+
+    def write_to_file(self):
+        with open(f'{self.date}', 'wb') as f:
+            pickle.dump(self, file=f)
+
 
 class NewsItem():
     def __init__(self, raw_info):
