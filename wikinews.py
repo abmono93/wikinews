@@ -52,7 +52,8 @@ class WikiNewsGenerator(HTMLParser):
             self._state = READING_STATE
 
     def _read_info(self, data):
-        self.news[self._current_date] = DayOfNews(self._current_date, data)
+        if len(data) > 2:
+            self.news[self._current_date] = DayOfNews(self._current_date, data)
         self._state = START_STATE
 
     def handle_endtag(self, tag):
