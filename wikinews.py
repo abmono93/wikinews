@@ -96,21 +96,24 @@ class DayOfNews():
             return ans
 
         def parse_category():
-            nonlocal line, news_item, subcategory
-            item_name, line = parse_item_name(line)
-            if len(line) == 0 or is_just_more_categories(line):
-                subcategory = item_name
-            else:
-                news_item = NewsItem(item_name + line)
+            nonlocal line, subcategory
+            subcategory = ''
+            while len(line):
+                if not line.startswith('[['):
+                    subcategory += line[0]
+                    line = line[1:]
+                else:
+                    item_name, line = parse_item_name(line)
+                    subcategory += item_name
 
         while line[0] == STAR_CHAR:
             depth += 1
             line = line[1:]
         line = line.strip()
-        if line.startswith('[['):
-            parse_category()
-        else:
+        if line.endswith(')]'):
             news_item = NewsItem(line)
+        else:
+            parse_category()
 
         return subcategory, depth, news_item
 
