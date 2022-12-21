@@ -162,6 +162,19 @@ class DayOfNews():
         with open(f'{self.date}', 'wb') as f:
             pickle.dump(self, file=f)
 
+    def get_urls(self):
+        urls = []
+
+        def _get_urls_in(category):
+            nonlocal urls
+            for value in category.values():
+                if type(value) != NewsItem:
+                    _get_urls_in(value)
+                else:
+                    urls.append(value.url)
+        _get_urls_in(self.categories)
+
+        return urls
 
 class NewsItem():
     def __init__(self, raw_info):
