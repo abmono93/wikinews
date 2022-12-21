@@ -73,6 +73,7 @@ class DayOfNews():
         self.categories = {}
         self._raw_info = raw_info
         self._current_category_chain = []
+        self.parse_info()
 
     def create_new_category(self, category_name):
         self.categories[category_name] = {}
