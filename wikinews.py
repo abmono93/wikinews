@@ -176,6 +176,47 @@ class DayOfNews():
 
         return urls
 
+    def remove_duplicates(self, other_dayofnews=None, url_list=None):
+
+        def _remove_duplicates_from_category(remove, duplicates):
+            for key, value in duplicates.items():
+                if type(value) == NewsItem:
+                    if value.url in remove.keys():
+                        remove.pop(value.url)
+                elif key in remove:
+                    _remove_duplicates_from_category(
+                        remove[key],
+                        duplicates[key])
+
+        def _remove_duplicate_urls(remove, urls):
+            to_delete = []
+            for value in remove.values():
+                if type(value) == NewsItem:
+                    if value.url in urls:
+                        to_delete.append(value.url)
+                else:
+                    _remove_duplicate_urls(
+                        value,
+                        urls)
+            for url in to_delete:
+                remove.pop(url)
+
+        def _remove_empty_categories(categories):
+            to_delete = []
+            for key, value in categories.items():
+                if type(value) != NewsItem:
+                    _remove_empty_categories(value)
+                    if len(value) == 0:
+                        to_delete.append(key)
+            for key in to_delete:
+                categories.pop(key)
+
+        if other_dayofnews:
+            _remove_duplicates_from_category(self.categories, other_dayofnews.categories)
+        elif url_list:
+            _remove_duplicate_urls(self.categories, url_list)
+        _remove_empty_categories(self.categories)
+
 class NewsItem():
     def __init__(self, raw_info):
         self.text = ''
