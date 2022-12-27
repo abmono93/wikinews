@@ -7,21 +7,29 @@ START_STATE = 0
 SCAN_STATE = 1
 READING_STATE = 2
 
+SINGLE_QUOTE = "'"
 TRIPLE_QUOTE = "\'''"
 STAR_CHAR = '*'
 BAR_CHAR = '|'
+SQUARE_OPEN_BRACKET = '['
+CLOSE_PAREN = ')'
+OPEN_BRACKETS = '[['
+CLOSE_BRACKETS = ']]'
+
+def consume(_string):
+    return _string[0], _string[1:]
 
 def parse_item_name(data):
-    item_name = ''
+    item_name = str()
 
-    data = data.lstrip('[[')
-    while not data.startswith(']]'):
-        if data.startswith(BAR_CHAR):
-            item_name = ''
+    data = data.lstrip(OPEN_BRACKETS)
+    while not data.startswith(CLOSE_BRACKETS):
+        first_char, data = consume(data)
+        if first_char == BAR_CHAR:
+            item_name = str()
         else:
-            item_name += data[0]
-        data = data[1:]
-    data = data.lstrip(']]')
+            item_name += first_char
+    data = data.lstrip(CLOSE_BRACKETS)
 
     return item_name, data
 
@@ -75,6 +83,14 @@ class DayOfNews():
         self._current_category_chain = []
         self.parse_info()
 
+    def get_current_category(self):
+        current_category = self.categories
+
+        for category in self._current_category_chain:
+            current_category = current_category[category]
+
+        return current_category
+
     def create_new_category(self, category_name):
         self.categories[category_name] = {}
         self._current_category_chain = [category_name]
@@ -83,54 +99,39 @@ class DayOfNews():
         depth = 0
         subcategory = None
         news_item = None
-        
-        def is_just_more_categories(line):
-            ans = True
-            while len(line) and line.startswith(','):
-                line = line[1:]
-                line = line.strip()
-                if line.startswith('[['):
-                    line = line[line.find(']]') + 2:]
-            if len(line):
-                ans = False
-            return ans
 
-        def parse_category():
-            nonlocal line, subcategory
-            subcategory = ''
-            while len(line):
-                if not line.startswith('[['):
-                    subcategory += line[0]
-                    line = line[1:]
+        def _parse_category(raw_category):
+            subcategory = str()
+
+            while len(raw_category):
+                if not raw_category.startswith(OPEN_BRACKETS):
+                    first_char, raw_category = consume(raw_category)
+                    subcategory += first_char
                 else:
-                    item_name, line = parse_item_name(line)
+                    item_name, raw_category = parse_item_name(raw_category)
                     subcategory += item_name
 
-        while line[0] == STAR_CHAR:
+            return subcategory
+
+        while line.startswith(STAR_CHAR):
             depth += 1
-            line = line[1:]
+            _, line = consume(line)
         line = line.strip()
         if line.endswith(')]'):
             news_item = NewsItem(line)
         else:
-            parse_category()
+            subcategory = _parse_category(line)
 
         return subcategory, depth, news_item
 
     def set_subcategory(self, subcategory, depth):
         while len(self._current_category_chain) > depth:
             self._current_category_chain.pop(-1)
-        parent = self.categories
-        for category in self._current_category_chain:
-            parent = parent[category]
-        parent[subcategory] = {}
+        self.get_current_category()[subcategory] = {}
         self._current_category_chain.append(subcategory)
 
     def append_news_item(self, news_item):
-        parent = self.categories
-        for category in self._current_category_chain:
-            parent = parent[category]
-        parent[news_item.url] = news_item
+        self.get_current_category()[news_item.url] = news_item
     
     def parse_info(self):
         for line in self._raw_info.splitlines():
@@ -143,8 +144,9 @@ class DayOfNews():
                 elif news_item:
                     self.append_news_item(news_item)
 
-    def stringify(self, categories, format_str='{text} {source} {url}\n'):
+    def stringify(self, categories=None, format_str='{text} {source} {url}\n'):
         news_str = str()
+
         def add_news_items(category):
             nonlocal news_str
             for item_or_category in category.values():
@@ -155,7 +157,8 @@ class DayOfNews():
                         url=item_or_category.url)
                 else:
                     add_news_items(item_or_category)
-        add_news_items(categories)
+        add_news_items(categories or self.categories)
+
         return news_str
 
     def write_to_file(self):
@@ -219,9 +222,9 @@ class DayOfNews():
 
 class NewsItem():
     def __init__(self, raw_info):
-        self.text = ''
-        self.url = ''
-        self.source = ''
+        self.text = str()
+        self.url = str()
+        self.source = str()
         self.raw_info = raw_info
         self.parse_raw_info(raw_info)
 
@@ -233,31 +236,25 @@ class NewsItem():
 
     def parse_raw_info(self, data):
         while len(data):
-            if data.startswith('[['):
+            if data.startswith(OPEN_BRACKETS):
                 item_name, data = parse_item_name(data)
                 self.text += item_name
-            elif data.startswith('['):
+            elif data.startswith(SQUARE_OPEN_BRACKET):
                 self.parse_link(data)
                 break
             else:
-                self.text += data[0]
-                data = data[1:]
+                first_char, data = consume(data)
+                self.text += first_char
         self.text = self.text.strip()
 
     def parse_link(self, link):
-        link = link.lstrip('[')
+        link = link.lstrip(SQUARE_OPEN_BRACKET)
         while not link.startswith(' ('):
-            self.url += link[0]
-            link = link[1:]
+            first_char, link = consume(link)
+            self.url += first_char
         link = link.lstrip(' (')
-        while not link.startswith(')'):
-            if not link.startswith("'"):
-                self.source += link[0]
-            link = link[1:]
+        while not link.startswith(CLOSE_PAREN):
+            first_char, link = consume(link)
+            if first_char != SINGLE_QUOTE:
+                self.source += first_char
         link = link.lstrip(')]')
-
-
-
-
-
-
