@@ -154,7 +154,8 @@ class DayOfNews():
                     news_str += format_str.format(
                         text=item_or_category.text,
                         source=item_or_category.source,
-                        url=item_or_category.url)
+                        url=item_or_category.url,
+                        date=self.date)
                 else:
                     add_news_items(item_or_category)
         add_news_items(categories or self.categories)
