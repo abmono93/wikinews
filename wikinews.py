@@ -98,7 +98,7 @@ class DayOfNews():
     def parse_bullet_point(self, line):
         depth = 0
         subcategory = None
-        news_item = None
+        story = None
 
         def _parse_category(raw_category):
             subcategory = str()
@@ -118,11 +118,11 @@ class DayOfNews():
             _, line = consume(line)
         line = line.strip()
         if line.endswith(')]'):
-            news_item = NewsItem(line)
+            story = Story(line)
         else:
             subcategory = _parse_category(line)
 
-        return subcategory, depth, news_item
+        return subcategory, depth, story
 
     def set_subcategory(self, subcategory, depth):
         while len(self._current_category_chain) > depth:
@@ -130,35 +130,35 @@ class DayOfNews():
         self.get_current_category()[subcategory] = {}
         self._current_category_chain.append(subcategory)
 
-    def append_news_item(self, news_item):
-        self.get_current_category()[news_item.url] = news_item
+    def append_story(self, story):
+        self.get_current_category()[story.url] = story
     
     def parse_info(self):
         for line in self._raw_info.splitlines():
             if line.startswith(TRIPLE_QUOTE):
                 self.create_new_category(line.strip(TRIPLE_QUOTE))
             elif line.startswith(STAR_CHAR):
-                subcategory, depth, news_item = self.parse_bullet_point(line)
+                subcategory, depth, story = self.parse_bullet_point(line)
                 if subcategory:
                     self.set_subcategory(subcategory, depth)
-                elif news_item:
-                    self.append_news_item(news_item)
+                elif story:
+                    self.append_story(story)
 
     def stringify(self, categories=None, format_str='{text} {source} {url}\n'):
         news_str = str()
 
-        def add_news_items(category):
+        def add_stories(category):
             nonlocal news_str
             for item_or_category in category.values():
-                if type(item_or_category) == NewsItem:
+                if type(item_or_category) == Story:
                     news_str += format_str.format(
                         text=item_or_category.text,
                         source=item_or_category.source,
                         url=item_or_category.url,
                         date=self.date)
                 else:
-                    add_news_items(item_or_category)
-        add_news_items(categories or self.categories)
+                    add_stories(item_or_category)
+        add_stories(categories or self.categories)
 
         return news_str
 
@@ -172,7 +172,7 @@ class DayOfNews():
         def _get_urls_in(category):
             nonlocal urls
             for value in category.values():
-                if type(value) != NewsItem:
+                if type(value) != Story:
                     _get_urls_in(value)
                 else:
                     urls.append(value.url)
@@ -184,7 +184,7 @@ class DayOfNews():
 
         def _remove_duplicates_from_category(remove, duplicates):
             for key, value in duplicates.items():
-                if type(value) == NewsItem:
+                if type(value) == Story:
                     if value.url in remove.keys():
                         remove.pop(value.url)
                 elif key in remove:
@@ -195,7 +195,7 @@ class DayOfNews():
         def _remove_duplicate_urls(remove, urls):
             to_delete = []
             for value in remove.values():
-                if type(value) == NewsItem:
+                if type(value) == Story:
                     if value.url in urls:
                         to_delete.append(value.url)
                 else:
@@ -208,7 +208,7 @@ class DayOfNews():
         def _remove_empty_categories(categories):
             to_delete = []
             for key, value in categories.items():
-                if type(value) != NewsItem:
+                if type(value) != Story:
                     _remove_empty_categories(value)
                     if len(value) == 0:
                         to_delete.append(key)
@@ -221,7 +221,7 @@ class DayOfNews():
             _remove_duplicate_urls(self.categories, url_list)
         _remove_empty_categories(self.categories)
 
-class NewsItem():
+class Story():
     def __init__(self, raw_info):
         self.text = str()
         self.url = str()
