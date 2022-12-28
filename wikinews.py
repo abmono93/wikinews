@@ -83,6 +83,9 @@ class DayOfNews():
         self._current_category_chain = []
         self.parse_info()
 
+    def __bool__(self):
+        return len(self.categories) > 0
+
     def get_current_category(self):
         current_category = self.categories
 
