@@ -196,18 +196,22 @@ class DayOfNews():
         return urls
 
     def remove_duplicates(self, other_dayofnews=None, url_list=None):
+        duplicates_removed = 0
 
         def _remove_duplicates_from_category(remove, duplicates):
+            nonlocal duplicates_removed
             for key, value in duplicates.items():
                 if type(value) == Story:
                     if value.url in remove.keys():
                         remove.pop(value.url)
+                        duplicates_removed += 1
                 elif key in remove:
                     _remove_duplicates_from_category(
                         remove[key],
                         duplicates[key])
 
         def _remove_duplicate_urls(remove, urls):
+            nonlocal duplicates_removed
             to_delete = []
             for value in remove.values():
                 if type(value) == Story:
@@ -219,6 +223,7 @@ class DayOfNews():
                         urls)
             for url in to_delete:
                 remove.pop(url)
+                duplicates_removed += 1
 
         def _remove_empty_categories(categories):
             to_delete = []
@@ -235,6 +240,8 @@ class DayOfNews():
         elif url_list:
             _remove_duplicate_urls(self.categories, url_list)
         _remove_empty_categories(self.categories)
+
+        return duplicates_removed
 
     def combine(self, other_dayofnews):
         def _add_missing(from_category, to_category):
