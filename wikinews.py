@@ -131,7 +131,7 @@ class DayOfNews():
             _, line = consume(line)
         line = line.strip()
         if line.endswith(STORY_DELIM):
-            story = Story(line)
+            story = Story(line, self.date)
         else:
             subcategory = _parse_category(line)
 
@@ -168,7 +168,7 @@ class DayOfNews():
                         text=item_or_category.text,
                         source=item_or_category.source,
                         url=item_or_category.url,
-                        date=self.date)
+                        date=item_or_category.date)
                 else:
                     add_stories(item_or_category)
         add_stories(categories or self.categories)
@@ -234,11 +234,25 @@ class DayOfNews():
             _remove_duplicate_urls(self.categories, url_list)
         _remove_empty_categories(self.categories)
 
+    def combine(self, other_dayofnews):
+        def _add_missing(from_category, to_category):
+            for key, value in from_category.items():
+                if type(value) == Story:
+                    if value.url not in to_category:
+                        to_category[key] = value
+                elif key not in to_category:
+                    to_category[key] = value
+                else:
+                    _add_missing(value, to_category[key])
+
+        _add_missing(other_dayofnews.categories, self.categories)
+
 class Story():
-    def __init__(self, raw_info):
+    def __init__(self, raw_info, date):
         self.text = str()
         self.url = str()
         self.source = str()
+        self.date = date
         self.raw_info = raw_info
         self.parse_raw_info(raw_info)
 
