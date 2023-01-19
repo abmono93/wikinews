@@ -15,6 +15,7 @@ SQUARE_OPEN_BRACKET = '['
 CLOSE_PAREN = ')'
 OPEN_BRACKETS = '[['
 CLOSE_BRACKETS = ']]'
+STORY_DELIM = ')]'
 
 def consume(_string):
     return _string[0], _string[1:]
@@ -38,6 +39,7 @@ class WikiNewsGenerator(HTMLParser):
         super(). __init__() 
         self.news = {}
         self._current_date = None
+        self._partial_data = None
         self._state = START_STATE
         self._fill_news()
 
@@ -60,8 +62,16 @@ class WikiNewsGenerator(HTMLParser):
             self._state = READING_STATE
 
     def _read_info(self, data):
-        if len(data) > 2:
-            self.news[self._current_date] = DayOfNews(self._current_date, data)
+        if len(data) < 2:
+            return
+        if not data.endswith(STORY_DELIM):
+            self._partial_data = data
+            return
+        raw_info = data
+        if self._partial_data:
+            raw_info = self._partial_data + raw_info
+            self._partial_data = None
+        self.news[self._current_date] = DayOfNews(self._current_date, raw_info)
         self._state = START_STATE
 
     def handle_endtag(self, tag):
@@ -120,7 +130,7 @@ class DayOfNews():
             depth += 1
             _, line = consume(line)
         line = line.strip()
-        if line.endswith(')]'):
+        if line.endswith(STORY_DELIM):
             story = Story(line)
         else:
             subcategory = _parse_category(line)
@@ -261,4 +271,4 @@ class Story():
             first_char, link = consume(link)
             if first_char != SINGLE_QUOTE:
                 self.source += first_char
-        link = link.lstrip(')]')
+        link = link.lstrip(STORY_DELIM)
