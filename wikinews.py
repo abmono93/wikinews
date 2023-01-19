@@ -35,17 +35,17 @@ def parse_item_name(data):
     return item_name, data
 
 class WikiNewsGenerator(HTMLParser):
-    def __init__(self):
+    def __init__(self, page_name='Portal:Current_events'):
         super(). __init__() 
         self.news = {}
         self._current_date = None
         self._partial_data = None
         self._state = START_STATE
-        self._fill_news()
+        self._fill_news(page_name)
 
-    def _fill_news(self):
+    def _fill_news(self, page_name):
         site = mwclient.Site('en.wikipedia.org')
-        current_events_text = site.pages['Portal:Current_events'].text(expandtemplates=True)
+        current_events_text = site.pages[page_name].text(expandtemplates=True)
         self.feed(current_events_text)
     
     def _change_date(self, data):
