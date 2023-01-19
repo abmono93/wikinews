@@ -31,6 +31,8 @@ def parse_item_name(data):
         else:
             item_name += first_char
     data = data.lstrip(CLOSE_BRACKETS)
+    if item_name.startswith('Category:'):
+        item_name = str()
 
     return item_name, data
 
