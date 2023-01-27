@@ -41,7 +41,7 @@ class WikiNewsGenerator(HTMLParser):
         super(). __init__() 
         self.news = {}
         self._current_date = None
-        self._partial_data = None
+        self._partial_data = str()
         self._state = START_STATE
         self._fill_news(page_name)
 
@@ -67,12 +67,12 @@ class WikiNewsGenerator(HTMLParser):
         if len(data) < 2:
             return
         if not data.endswith(STORY_DELIM):
-            self._partial_data = data
+            self._partial_data += data
             return
         raw_info = data
         if self._partial_data:
             raw_info = self._partial_data + raw_info
-            self._partial_data = None
+            self._partial_data = str()
         self.news[self._current_date] = DayOfNews(self._current_date, raw_info)
         self._state = START_STATE
 
